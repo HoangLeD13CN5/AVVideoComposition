@@ -48,4 +48,8 @@ class WatermarkCompositionInstruction: NSObject, AVVideoCompositionInstructionPr
         self.watermarkFrame = watermarkFrame
         self.timeRange = timeRange
     }
+    
+    init(timeRange: CMTimeRange){
+        self.timeRange = timeRange
+    }
 }

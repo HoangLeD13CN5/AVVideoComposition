@@ -119,22 +119,43 @@ extension ViewController {
         let tracks = videoAsset.tracks(withMediaType: AVMediaTypeVideo)
         let videoAssetTrack = tracks.first!
         
-        // build video composition
-        let videoComposition = AVMutableVideoComposition()
-        videoComposition.customVideoCompositorClass = CustomVideoCompositor.self
-        videoComposition.renderSize = CGSize(width: videoAssetTrack.naturalSize.width, height: videoAssetTrack.naturalSize.height)
-        videoComposition.frameDuration = CMTimeMake(1, 30)
-        
         // build instructions
         let instructionTimeRange = CMTimeRangeMake(kCMTimeZero, videoAssetTrack.timeRange.duration)
-        // we're overlaying this on our source video. here, our source video is 1080 x 1080
-        // so even though our final export is 320 x 320, if we want full coverage of the video with our watermark,
-        // then we need to make our watermark frame 1080 x 1080
-        let image = self.image!.cgImage
-        let watermarkFrame = CGRect(x: 0, y: 0, width: videoAssetTrack.naturalSize.width, height: videoAssetTrack.naturalSize.height)
-        let instruction = WatermarkCompositionInstruction(timeRange: instructionTimeRange, watermarkImage: image!, watermarkFrame: watermarkFrame)
+        let mainInstruction = AVMutableVideoCompositionInstruction()
+        mainInstruction.timeRange = instructionTimeRange
+        let videolayerInstruction = AVMutableVideoCompositionLayerInstruction(assetTrack: videoAssetTrack)
+        let transform = videoAssetTrack.preferredTransform
+        videolayerInstruction.setTransform(transform, at: kCMTimeZero)
+        videolayerInstruction.setOpacity(0.0, at: videoAsset.duration)
+        mainInstruction.layerInstructions = [videolayerInstruction]
         
-        videoComposition.instructions = [instruction]
+        let assetInfo = orientationFromTransform(transform: transform)
+        var naturalSize:CGSize;
+        if(assetInfo.isPortrait){
+            naturalSize = CGSize(width:videoAssetTrack.naturalSize.height, height:videoAssetTrack.naturalSize.width);
+        } else {
+            naturalSize = videoAssetTrack.naturalSize;
+        }
+        // build video composition
+        let videoComposition = AVMutableVideoComposition()
+//        videoComposition.customVideoCompositorClass = CustomVideoCompositor.self
+        videoComposition.renderSize = CGSize(width: naturalSize.width, height: naturalSize.height)
+        videoComposition.frameDuration = CMTimeMake(1, 30)
+        videoComposition.instructions = [mainInstruction]
+        
+        let overlayLayer = CALayer()
+        overlayLayer.contents = self.image?.cgImage
+        overlayLayer.frame = CGRect(x: 0, y: 0, width: videoAssetTrack.naturalSize.width, height: videoAssetTrack.naturalSize.height)
+        
+        //set up parrent layer
+        let parentLayer = CALayer()
+        let videoLayer = CALayer()
+        parentLayer.frame = CGRect(x: 0, y: 0, width: videoAssetTrack.naturalSize.width, height: videoAssetTrack.naturalSize.height)
+        videoLayer.frame = CGRect(x: 0, y: 0, width: videoAssetTrack.naturalSize.width, height: videoAssetTrack.naturalSize.height)
+        parentLayer.addSublayer(videoLayer)
+        parentLayer.addSublayer(overlayLayer)
+        // 3 - apply magic
+        videoComposition.animationTool = AVVideoCompositionCoreAnimationTool.init(postProcessingAsVideoLayer: videoLayer, in: parentLayer)
         
         // create exporter and export
         let exporter = AVAssetExportSession(asset: videoAsset, presetName: AVAssetExportPresetHighestQuality)
@@ -147,6 +168,23 @@ extension ViewController {
                 self.exportDidFinish(exporter!)
             }
         }
+    }
+    
+    private func orientationFromTransform(transform: CGAffineTransform) -> (orientation: UIImageOrientation, isPortrait: Bool) {
+        var assetOrientation = UIImageOrientation.up
+        var isPortrait = false
+        if transform.a == 0 && transform.b == 1.0 && transform.c == -1.0 && transform.d == 0 {
+            assetOrientation = .right
+            isPortrait = true
+        } else if transform.a == 0 && transform.b == -1.0 && transform.c == 1.0 && transform.d == 0 {
+            assetOrientation = .left
+            isPortrait = true
+        } else if transform.a == 1.0 && transform.b == 0 && transform.c == 0 && transform.d == 1.0 {
+            assetOrientation = .up
+        } else if transform.a == -1.0 && transform.b == 0 && transform.c == 0 && transform.d == -1.0 {
+            assetOrientation = .down
+        }
+        return (assetOrientation, isPortrait)
     }
     
     func deleteExistingFile(url: URL) {

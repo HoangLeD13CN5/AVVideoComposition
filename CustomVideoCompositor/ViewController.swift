@@ -14,11 +14,10 @@ import Photos
 class ViewController: UIViewController{
     
     @IBOutlet weak var videoView: UIView!
-    
     @IBOutlet weak var drawView: UIView!
     @IBOutlet weak var playerView: ViewDraw!
     @IBOutlet weak var exportVideoShow: UIView!
-    
+    @IBOutlet weak var imageVIew: UIImageView!
     
     private var playerLayer: AVPlayerLayer?
     private var player: AVPlayer?
@@ -27,7 +26,7 @@ class ViewController: UIViewController{
     private var playerLayer1: AVPlayerLayer?
     private var player1: AVPlayer?
     private var playerItem1: AVPlayerItem?
-      var isPlayingVideo = false
+    var isPlayingVideo = false
     
     var image:UIImage?
     var exportUrl:URL!
@@ -64,7 +63,6 @@ class ViewController: UIViewController{
         }
     }
     
-    
     @IBAction func playPause(_ sender: Any) {
         if self.isPlayingVideo {
             self.indexCGTime = (player?.currentItem?.currentTime())!
@@ -73,8 +71,6 @@ class ViewController: UIViewController{
             playVideo()
         }
     }
-    
-    @IBOutlet weak var imageVIew: UIImageView!
     
     @objc func initPlayerViewExport(){
         playerItem1 = AVPlayerItem(url: exportUrl)
@@ -111,7 +107,7 @@ extension ViewController {
     func addImageForVideo() {
         // remove existing export file if it exists
         let baseDirectory = URL(fileURLWithPath: NSTemporaryDirectory())
-        exportUrl = (baseDirectory.appendingPathComponent("export.mov", isDirectory: false) as NSURL).filePathURL!
+        exportUrl = (baseDirectory.appendingPathComponent("export.mp4", isDirectory: false) as NSURL).filePathURL!
         deleteExistingFile(url: exportUrl)
         
         // init variables

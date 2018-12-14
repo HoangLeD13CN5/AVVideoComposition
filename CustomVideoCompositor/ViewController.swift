@@ -126,7 +126,7 @@ extension ViewController {
         videoComposition.frameDuration = CMTimeMake(1, 30)
         
         // build instructions
-        let instructionTimeRange = CMTimeRangeMake(kCMTimeZero, videoAssetTrack.timeRange.duration)
+        let instructionTimeRange = CMTimeRangeMake(kCMTimeZero, CMTimeMake(20, 1))
         // we're overlaying this on our source video. here, our source video is 1080 x 1080
         // so even though our final export is 320 x 320, if we want full coverage of the video with our watermark,
         // then we need to make our watermark frame 1080 x 1080
@@ -134,7 +134,16 @@ extension ViewController {
         let watermarkFrame = CGRect(x: 0, y: 0, width: videoAssetTrack.naturalSize.width, height: videoAssetTrack.naturalSize.height)
         let instruction = WatermarkCompositionInstruction(timeRange: instructionTimeRange, watermarkImage: image!, watermarkFrame: watermarkFrame)
         
-        videoComposition.instructions = [instruction]
+        // build instructions
+        let instructionTimeRange1 = CMTimeRangeMake(CMTimeMake(20, 1), videoAssetTrack.timeRange.duration)
+        // we're overlaying this on our source video. here, our source video is 1080 x 1080
+        // so even though our final export is 320 x 320, if we want full coverage of the video with our watermark,
+        // then we need to make our watermark frame 1080 x 1080
+        let image1 = UIImage(named: "panda.png")!.cgImage
+        let watermarkFrame1 = CGRect(x: 0, y: 0, width: 320, height:320)
+        let instruction1 = WatermarkCompositionInstruction(timeRange: instructionTimeRange1, watermarkImage: image1!, watermarkFrame: watermarkFrame1)
+        
+        videoComposition.instructions = [instruction,instruction1]
         
         // create exporter and export
         let exporter = AVAssetExportSession(asset: videoAsset, presetName: AVAssetExportPresetHighestQuality)
